@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BACKROOMS: Grab your $20 before Sam Altman drains you</title>
+  <style>
+    :root {
+      --amber: #d9c86a;
+      --danger: #ff3b3b;
+      --good: #4dff88;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #0a0a08;
+      font-family: "Courier New", monospace;
+      color: #eee;
+      cursor: none;
+    }
+    #game { position: absolute; inset: 0; display: block; }
+
+    /* HUD */
+    #hud {
+      position: absolute; inset: 0; pointer-events: none;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 6px rgba(0,0,0,0.9);
+    }
+    .panel {
+      position: absolute; padding: 10px 14px;
+      background: rgba(20, 20, 10, 0.55);
+      border: 1px solid rgba(217, 200, 106, 0.4);
+      border-radius: 6px;
+      font-size: 14px; line-height: 1.4;
+      letter-spacing: 0.5px;
+    }
+    #top-left { top: 16px; left: 16px; max-width: 260px; }
+    #top-right { top: 16px; right: 16px; text-align: right; max-width: 240px; }
+
+    .ram-bar-wrap {
+      width: 220px; height: 16px; margin-top: 6px;
+      border: 1px solid rgba(217,200,106,0.5);
+      background: rgba(0,0,0,0.4); border-radius: 3px; overflow: hidden;
+    }
+    #ram-bar {
+      height: 100%; width: 100%;
+      background: linear-gradient(90deg, #3f8cff, #4dff88);
+      transition: width 0.15s ease, background 0.3s;
+    }
+    #ram-flash {
+      position: absolute; inset: 0; background: var(--danger);
+      opacity: 0; pointer-events: none;
+    }
+    #stamina-bar {
+      height: 100%; width: 100%;
+      background: linear-gradient(90deg, #ffb03b, #ffd23b);
+      transition: width 0.1s ease, background 0.3s;
+    }
+
+    .stat { font-size: 15px; }
+    .stat b { color: var(--amber); }
+    .money b { color: var(--good); }
+    .hint { color: #9a9a7a; font-size: 12px; margin-top: 4px; }
+
+    #crosshair {
+      position: absolute; top: 50%; left: 50%;
+      width: 6px; height: 6px; margin: -3px 0 0 -3px;
+      background: rgba(255,255,255,0.8); border-radius: 50%;
+      pointer-events: none; mix-blend-mode: difference;
+    }
+
+    /* Overlays */
+    .overlay {
+      position: absolute; inset: 0; display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; gap: 18px;
+      background: radial-gradient(circle at center, rgba(30,28,14,0.85), rgba(6,6,4,0.95));
+      backdrop-filter: blur(2px);
+      pointer-events: auto; z-index: 10;
+    }
+    .overlay.hidden { display: none; }
+    .overlay h1 {
+      font-size: 42px; letter-spacing: 3px; font-weight: 800;
+      text-shadow: 0 0 20px rgba(217,200,106,0.6);
+    }
+    .overlay h1.win { color: var(--good); text-shadow: 0 0 24px rgba(77,255,136,0.7); }
+    .overlay h1.lose { color: var(--danger); text-shadow: 0 0 24px rgba(255,59,59,0.7); }
+    .overlay p { max-width: 520px; font-size: 16px; line-height: 1.6; color: #cfcfa0; }
+    .keys { color: #8f8f6f; font-size: 13px; line-height: 1.8; }
+    .keys b { color: #eee; }
+    button {
+      font-family: inherit; font-size: 18px; font-weight: 700;
+      letter-spacing: 2px; padding: 14px 40px; cursor: pointer;
+      color: #101008; background: var(--amber); border: none; border-radius: 8px;
+      box-shadow: 0 0 18px rgba(217,200,106,0.5);
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+    button:hover { transform: scale(1.05); box-shadow: 0 0 28px rgba(217,200,106,0.8); }
+    .sam { color: var(--danger); }
+    .flash-steal {
+      position: absolute; inset: 0; pointer-events: none; z-index: 5;
+      background: radial-gradient(circle at 50% 50%, transparent 40%, rgba(255,0,0,0.35) 100%);
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <div id="crosshair"></div>
+    <div class="flash-steal" id="steal-flash"></div>
+    <div id="ram-flash"></div>
+    <div class="panel" id="top-left">
+      <div class="stat">RAM: <b id="ram-text">64.0 GB</b></div>
+      <div class="ram-bar-wrap"><div id="ram-bar"></div></div>
+      <div class="stat" style="margin-top:6px;">STAMINA</div>
+      <div class="ram-bar-wrap"><div id="stamina-bar"></div></div>
+      <div class="stat money" style="margin-top:8px;">CASH: $<b id="cash-text">0.00</b> / $20.00</div>
+      <div class="hint">Buy the RTX 3090 with $20.00</div>
+    </div>
+    <div class="panel" id="top-right">
+      <div class="stat">SAM <b>ALTMAN</b></div>
+      <div class="hint" id="prox-hint">Far away</div>
+      <div class="hint" id="sam-dist"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="start-overlay">
+    <h1>BACKROOMS</h1>
+    <p>
+      You woke up in the backrooms with <b>64 GB of RAM</b>. Collect
+      <b>$20.00</b> scattered across the maze to buy an <b>RTX 3090</b> and escape.
+      But <span class="sam">Sam Altman</span> is hunting you — when he gets close,
+      he <b>steals 2 GB of your RAM</b> with every touch. Hit <b>0 GB</b> and it's game over.
+    </p>
+    <div class="keys">
+      <b>WASD</b> move &nbsp;·&nbsp; <b>Mouse</b> look &nbsp;·&nbsp; <b>Shift</b> sprint &nbsp;·&nbsp; <b>Esc</b> release mouse
+    </div>
+    <button id="start-btn">CLICK TO ENTER</button>
+  </div>
+
+  <div class="overlay hidden" id="end-overlay">
+    <h1 id="end-title">GAME OVER</h1>
+    <p id="end-msg"></p>
+    <button id="restart-btn">PLAY AGAIN</button>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

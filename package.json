@@ -1,0 +1,17 @@
+{
+  "name": "backrooms-ram",
+  "version": "1.0.0",
+  "description": "Play as a guy with 64GB of RAM in the backrooms. Collect $20 to buy an RTX 3090. Sam Altman is chasing you and steals 2GB of RAM when he gets close. Hit 0GB RAM and you lose.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@types/three": "^0.187.0",
+    "three": "^0.187.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}
